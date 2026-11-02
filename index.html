@@ -495,7 +495,7 @@ function resetGame() {
     waypoints = mapData.waypoints;
     waypointsB = mapData.waypointsB || null;
     dualSpawnActive = mapData.dualSpawn;
-    MAX_WAVES = 20 + (currentMapIdx * 5); // 20, 25, 30, 35, 40
+    MAX_WAVES = 20 + (currentMapIdx * 5);
 
     gold = 200;
     lives = 20;
@@ -725,7 +725,6 @@ class Enemy {
         }
     }
 
-    // Calcula el progreso acumulado en el camino hacia la meta
     getProgress() {
         let activeWaypoints = (this.isAltPath && waypointsB) ? waypointsB : waypoints;
         let progress = 0;
@@ -1197,7 +1196,6 @@ class Tower {
         }
     }
 
-    // Siempre busca al enemigo que va PRIMERO (más avanzado hacia la meta)
     findTarget() {
         let best = null; 
         let maxProgress = -1;
@@ -1495,10 +1493,13 @@ function startNextWave() {
         case 13: addBatch('orc', 16); addBatch('golem', 4); addBatch('wolf', 8); break;
         case 14: addBatch('golem', 6); addBatch('lion', 3); addBatch('giant', 4); addBatch('wolf', 12); addBatch('golem_reforzado', 1); addBatch('lion_metal', 1); addBatch('wolf_reforzado', 2); break;
         case 15: addBatch('demon', 1); break; 
-        case 16: addBatch('lion', 5); addBatch('golem', 10); addBatch('giant', 3); addBatch('golem_reforzado', 3); addBatch('lion_metal', 1); break; 
-        case 17: addBatch('wolf', 10); addBatch('lion', 5); addBatch('wolf', 10); addBatch('lion', 10); addBatch('lion_metal', 5); addBatch('wolf_reforzado', 7); break; 
-        case 18: addBatch('giant', 10); addBatch('golem', 10); addBatch('lion', 3); addBatch('golem_reforzado', 6); addBatch('lion_metal', 3); break; 
-        case 19: addBatch('goblin', 20); addBatch('wolf', 20); addBatch('giant', 10); addBatch('golem', 8); addBatch('lion', 10); addBatch('lion_metal', 4); addBatch('wolf_reforzado', 10); break; 
+        
+        // RONDAS 16 A 19 LIGERAMENTE MÁS FÁCILES:
+        case 16: addBatch('lion', 4); addBatch('golem', 8); addBatch('giant', 2); addBatch('golem_reforzado', 2); addBatch('lion_metal', 1); break; // Reducido levemente
+        case 17: addBatch('wolf', 8); addBatch('lion', 4); addBatch('wolf', 8); addBatch('lion', 8); addBatch('lion_metal', 4); addBatch('wolf_reforzado', 5); break; // Reducido levemente
+        case 18: addBatch('giant', 8); addBatch('golem', 8); addBatch('lion', 2); addBatch('golem_reforzado', 4); addBatch('lion_metal', 2); break; // Reducido levemente
+        case 19: addBatch('goblin', 15); addBatch('wolf', 15); addBatch('giant', 8); addBatch('golem', 6); addBatch('lion', 8); addBatch('lion_metal', 3); addBatch('wolf_reforzado', 8); break; // Reducido levemente
+        
         default:
             let enemyTypesPool = ['goblin', 'wolf', 'wolf_reforzado', 'orc', 'golem', 'golem_reforzado', 'giant', 'lion', 'lion_metal'];
             let count = 15 + (wave * 2);
@@ -1683,7 +1684,6 @@ function drawMenuScreen() {
     ctx.fillText("INICIAR JUEGO", canvas.width / 2, canvas.height / 2 + 113);
 }
 
-// Dibuja las casillas cuadradas individuales del camino
 function drawPath(wps) {
     for (let i = 0; i < wps.length - 1; i++) {
         let p1 = wps[i];
