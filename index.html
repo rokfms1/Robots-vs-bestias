@@ -4,11 +4,11 @@ un tower defense ambientado en un futuro donde las bestias quieren aniquilar la 
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Robots vs Bestias - Invasión Total HD</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-* { box-sizing: border-box; user-select: none; }
+* { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
 body {
     background-color: #06080f;
     background-image:
@@ -39,6 +39,7 @@ h1 {
 canvas {
     background-color: #090b14; border: 2px solid rgba(0, 210, 255, 0.4); border-radius: 12px;
     box-shadow: 0 0 35px rgba(0, 210, 255, 0.15), 0 10px 30px rgba(0,0,0,0.8); cursor: crosshair;
+    touch-action: manipulation;
 }
 #side-ui {
     display: none; flex-direction: column; gap: 10px; width: 220px; max-height: 550px; overflow-y: auto; padding-right: 4px;
@@ -91,16 +92,40 @@ button.action-btn:hover { transform: translateY(-2px); box-shadow: 0 0 25px rgba
 .popup-btn:hover { filter: brightness(1.1); }
 .popup-sell { background: linear-gradient(135deg, #b71c1c, #d32f2f); color: white; }
 .weapon-icon { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
+/* ===== Adaptación móvil ===== */
+#gameCanvas { width: 100%; max-width: 900px; height: auto; aspect-ratio: 900 / 550; }
+#mobile-info { display: none; }
+#rotate-hint { display: none; }
+@media (hover: none) { .tooltip { display: none; } }
+@media (max-width: 820px) {
+    body { padding: 8px; }
+    h1 { font-size: 18px; letter-spacing: 1px; margin-bottom: 8px; }
+    #top-ui { flex-wrap: wrap; gap: 6px; padding: 6px 8px; margin-bottom: 8px; width: 100%; }
+    .stat-card { font-size: 11px; padding: 5px 8px; }
+    button.action-btn { font-size: 11px; padding: 8px 12px; }
+    #main-layout { flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+    #canvas-container { width: 100%; max-width: 900px; }
+    #side-ui { flex-direction: row; flex-wrap: wrap; justify-content: center; width: 100%; max-height: none; overflow: visible; }
+    .category-group { flex: 1 1 auto; min-width: 150px; }
+    .tower-card { padding: 6px 8px; }
+    .tower-name { font-size: 12px; }
+    #mobile-info { display: block; width: 100%; font-size: 12px; color: #aaa; background: rgba(14,18,28,0.75); border: 1px solid rgba(0,210,255,0.3); border-radius: 8px; padding: 6px 8px; }
+}
+@media (max-width: 820px) and (orientation: portrait) {
+    #rotate-hint { display: block; color: #ffd700; font-size: 13px; margin-bottom: 8px; }
+}
 </style>
 </head>
 <body>
 <h1>Robots vs Bestias - Invasión Total</h1>
+<div id="rotate-hint">📱 Gira tu celular a horizontal para ver mejor el mapa</div>
 <div id="top-ui">
     <div class="stat-card">VIDA <span class="stat-value lives" id="val-lives">20</span></div>
     <div class="stat-card">ORO <span class="stat-value gold" id="val-gold">$200</span></div>
     <div class="stat-card">RONDA <span class="stat-value" id="val-wave">1/20</span></div>
     <button class="action-btn" id="wave-btn" onclick="startNextWave()">INICIAR RONDA</button>
 </div>
+<div id="mobile-info"></div>
 <div id="main-layout">
     <div id="canvas-container">
         <canvas id="gameCanvas" width="900" height="550"></canvas>
@@ -297,6 +322,9 @@ function selectTower(index) {
     }
     const activeBtn = document.getElementById(`btn-${index}`);
     if (activeBtn) activeBtn.classList.add("active");
+    const tip = activeBtn ? activeBtn.querySelector('.tooltip') : null;
+    const info = document.getElementById("mobile-info");
+    if (info && tip) info.textContent = tip.textContent.trim().replace(/\s+/g, ' · ');
 }
 function updateAffordability() {
     for (let i = 0; i < towerTypes.length; i++) {
@@ -319,6 +347,7 @@ function resetGame() {
     document.getElementById("top-ui").style.display = "flex";
     document.getElementById("side-ui").style.display = "flex";
     hideTowerPopup();
+    selectTower(selectedTowerType);
     animId = requestAnimationFrame(gameLoop);
 }
 function returnToMenu() {
@@ -1133,16 +1162,20 @@ function startNextWave() {
     }
     if (wave !== 15 && wave !== MAX_WAVES) spawnQueue.sort(() => Math.random() - 0.5);
 }
-canvas.addEventListener("mousemove", (e) => {
-    const rect = canvas.getBoundingClientRect();
-    mouseX = e.clientX - rect.left;
-    mouseY = e.clientY - rect.top;
-});
-canvas.addEventListener("mouseleave", () => { mouseX = -100; mouseY = -100; });
+// Convierte coordenadas de pantalla (mouse/toque) a coordenadas internas del canvas (900x550)
+function getCanvasPos(e) {
+    const r = canvas.getBoundingClientRect();
+    return {
+        x: (e.clientX - r.left) * canvas.width / r.width,
+        y: (e.clientY - r.top) * canvas.height / r.height
+    };
+}
+canvas.addEventListener("pointermove", (e) => { const p = getCanvasPos(e); mouseX = p.x; mouseY = p.y; });
+canvas.addEventListener("pointerdown", (e) => { const p = getCanvasPos(e); mouseX = p.x; mouseY = p.y; });
+canvas.addEventListener("pointerleave", () => { mouseX = -100; mouseY = -100; });
 canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 canvas.addEventListener("click", (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    const { x, y } = getCanvasPos(e);
     if (!gameStarted) {
         const startX = (canvas.width - (5 * 110 + 4 * 15)) / 2;
         for (let i = 0; i < 5; i++) {
@@ -1175,8 +1208,10 @@ canvas.addEventListener("click", (e) => {
         upgradeBtn.style.display = canUp ? "block" : "none";
         document.getElementById("popup-upgrade-cost").innerText = tt.tesla ? TESLA_UP_COST[foundTower.level] || 0 : tt.upgradeCost;
         document.getElementById("popup-sell-price").innerText = sellValue(foundTower);
-        popup.style.left = Math.min(x, canvas.width - 180) + "px";
-        popup.style.top = Math.min(y, canvas.height - 120) + "px";
+        const rect = canvas.getBoundingClientRect();
+        const sc = rect.width / canvas.width;
+        popup.style.left = Math.min(x * sc, rect.width - 180) + "px";
+        popup.style.top = Math.min(y * sc, rect.height - 120) + "px";
         popup.style.display = "block";
         return;
     } else {
